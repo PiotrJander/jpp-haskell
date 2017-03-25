@@ -1,8 +1,9 @@
+{-# LANGUAGE CPP #-}
+
 module Lib
     ( someFunc
     ) where
 
-import Lib
 import Prelude
 import Data.Char
 import Text.Read
