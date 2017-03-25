@@ -3,6 +3,7 @@ module Monads where
 import qualified Data.Map.Strict as M
 import Control.Monad
 import Data.Maybe
+import Control.Monad.State
 
 -- problem 1
 
@@ -27,6 +28,41 @@ allCombinations (xs:xss) = do
 
 data Tree a = Empty | Node a (Tree a) (Tree a) deriving (Eq, Ord, Show)
 
+fromList :: (Ord a) => [a] -> Tree a
+fromList = foldl fun Empty
+    where
+        fun Empty x = Node x Empty Empty
+        fun (Node v left right) x
+            | x <= v = Node v (fun left x) right
+            | otherwise = Node v left (fun right x)
+
+-- start difference lists
+
+newtype DiffList a = DiffList { getDiffList :: [a] -> [a] }
+
+toDiffList :: [a] -> DiffList a
+toDiffList xs = DiffList (xs++)
+
+fromDiffList :: DiffList a -> [a]
+fromDiffList (DiffList f) = f []
+
+instance Monoid (DiffList a) where
+    mempty = DiffList (\xs -> [] ++ xs)
+    (DiffList f) `mappend` (DiffList g) = DiffList (f . g)
+
+-- end difference lists
+
+toListNaive :: Tree a -> [a]
+toListNaive Empty = []
+toListNaive (Node x left right) = toList left ++ [x] ++ toList right
+
+toList :: Tree a -> [a]
+toList = fromDiffList . toList'
+
+toList' :: Tree a -> DiffList a
+toList' Empty = toDiffList []
+toList' (Node x left right) = toDiffList [x] `mappend` toList' left `mappend` toList' right
+
 renumber_ :: Tree a -> Tree Int
 renumber_ Empty = Empty
 renumber_ t = renumber_' 0 t
@@ -34,14 +70,6 @@ renumber_ t = renumber_' 0 t
 renumber_' :: Int -> Tree a -> Tree Int
 renumber_' _ Empty = Empty
 renumber_' i (Node _ t1 t2) = Node i (renumber_' (i+1) t1) (renumber_' (i+1) t2)
-
-t :: Tree Int
-t = Node 0 (Node 0 Empty Empty) (Node 0 Empty (Node 0 Empty Empty))
-
-
--- renumber :: Tree a -> Tree Int
--- renumber
-
 
 type Var = String
 type Env = M.Map Var Int
@@ -86,6 +114,38 @@ e1 = ELet "x" (ELet "y" (EOp OpAdd (EInt 6) (EInt 9))
                 (EOp OpMul x (EInt 3))
     where x = EVar "x"
           y = EVar "y"
+
+{-
+a. Dany typ drzew
+
+data Tree a = Empty | Node a (Tree a) (Tree a) deriving (Eq, Ord, Show)
+Napisz funkcję
+
+renumberTree :: Tree a -> Tree Int
+która ponumeruje wezly drzewa tak, ze kazdy z nich bedzie mial inny numer.
+Porownaj rozwiazania z uzyciem monady State i bez.
+
+możliwe dodatkowe wymaganie: ponumeruj wezly drzewa w kolejnosci infiksowej.
+
+(toList $ renumber $ fromList "Learn Haskell") == [0..12]
+-}
+
+renumberTree :: Tree a -> Tree Int
+renumberTree tree = evalState (renumberTree' tree) 0
+
+renumberTree' :: Tree a -> State Int (Tree Int)
+renumberTree' Empty = return Empty
+renumberTree' (Node _ left right) = do
+    i <- get
+    put $ i + 1
+    le <- renumberTree' left
+    ri <- renumberTree' right
+    return $ Node i le ri
+
+
+
+
+
 
 
 
