@@ -142,6 +142,18 @@ renumberTree' (Node _ left right) = do
     ri <- renumberTree' right
     return $ Node i le ri
 
+{-
+b. Rozszerzmy język z poprzedniego zadania o instrukcje języka Tiny
+(patrz przedmiot Semantyka i Weryfikacja Programów)
+
+Stmt:   S ::= skip | x := e | S1;S2
+        | if b then S1 else S2 | while b do S
+korzystając z wcześniej napisanej funkcji evalExp, napisz funkcję
+
+execStmt :: Stmt -> IO ()
+która wykona podaną instrukcję (program) i wypisze stan końcowy
+(w tym wypadku wartości zmiennych)
+-}
 
 
 
