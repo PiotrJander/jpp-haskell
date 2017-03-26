@@ -4,6 +4,8 @@ import Auto
 
 import System.IO
 import System.Environment
+import Text.Read
+import Control.Monad
 
 {-
 B. Napisz program RunAuto, taki, że wywołanie RunAuto nazwa wczyta z pliku nazwa opis automatu i słowo i odpowie True lub False w zależności czy automat akceptuje słowo (oczywiście program powinien działać dla dowolnej poprawnej nazwy pliku).
@@ -32,15 +34,14 @@ ABABABACBA
 automat rozpoznaje język słów złożonych z liter A,B,C, kończących się CBA, zatem program powinien odpowiedzieć True.
 
 Puste linie ignorujemy; w przypadku błędnego wejścia program powinien odpowiedzieć BAD INPUT (ewentualnie z komunikatem diagnostycznym)
-
-** Wskazówki: **
-
-Do wczytywania może się przydać funkcja readMaybe z modułu Text.Read
-
-we'd like to use the maybe monad,
 -}
 
-main = do
+-- main :: IO ()
+-- main = readModel
+
+
+readModel :: IO ()
+readModel = do
     args <- getArgs
     parseFile $ head args
 
@@ -48,43 +49,52 @@ main = do
 parseFile :: String -> IO ()
 parseFile filename = do
     contents <- readFile filename
-    -- TODO handle maybe
-    parseContents . filter (/= "\n") . lines $ contents
+    let result = parseContents . filter (\line -> (unwords . words $ line) /= "") . lines $ contents
+    case result of {
+        Left msg -> putStrLn $ "BAD INPUT: " ++ msg;
+        Right b -> print b
+    }
 
 
-parseContents :: [String] -> Maybe Bool
+parseContents :: [String] -> Either String Bool
 parseContents (states:init:final:rest) = do
-    n <- readMaybe states :: Maybe Int
-    initStates <- readMaybe init :: Maybe [Int]
-    finalStates <- readMaybe final :: Maybe [Int]
+    n <- (readMaybe states :: Maybe Int) >>> "parseContents: " ++ states
+    initStates <- (readMaybe init :: Maybe [Int]) >>> "parseContents: " ++ init
+    finalStates <- (readMaybe final :: Maybe [Int]) >>> "parseContents: " ++ final
+    when (null rest) (Left $ "parseContents: " ++ "word not given")
     let
-        transTable = tail rest
+        transTable = Prelude.init rest
         word' = last rest
-    transitions <- mapM parseTransition transTable
+    transitions <- concat <$> mapM parseTransition transTable
     word <- validateWord word'
-    let a0 = fromLists ([0..n], initStates, finalStates, transitions)
+    let a0 = fromLists [0..n] initStates finalStates transitions
     return $ accepts a0 word
 
 
-parseTransition :: String -> Maybe (Int, Char, [Int])
+parseTransition :: String -> Either String [(Int, Char, [Int])]
 parseTransition s = do
-    from <- readMaybe a :: Maybe Int
-    sym <- readMaybe b :: Maybe Char
-    dest <- mapM (\x -> readMaybe x :: Maybe Int) (words rest)
-    return (from, sym, dest)
-    where
-        (a:b:rest) = words s
+    case words s of {
+        (a:b:rest) -> return ();
+        _ -> Left $ "parseTransition: " ++ s
+    }
+    let (a:b:rest) = words s
+    from <- (readMaybe a :: Maybe Int) >>> "parseTransition: " ++ s
+    dest <- mapM (\x -> (readMaybe x :: Maybe Int) >>> "parseTransition: " ++ s) rest
+    return $ map (\sym -> (from, sym, dest)) b
 
 
-validateWord :: String -> Maybe String
+validateWord :: String -> Either String String
 validateWord s
-    | all ((&&) <$> (== 'A') <*> (== 'B') <*> (== 'C')) word = return word
-    | otherwise = mempty
+    | all (\c -> (c == 'A') || (c == 'B') || (c == 'C')) word = return word
+    | otherwise = Left $ "validateWord " ++ word
     where
         word = unwords . words $ s
 
 
-
+infixl 4 >>>
+(>>>) :: Maybe a -> String -> Either String a
+Nothing >>> msg = Left msg
+(Just x) >>> msg = Right x
 
 
 
