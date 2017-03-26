@@ -8,7 +8,7 @@ runSimpleTests = runTests tests where
          , ("eps2",s $ accepts epsA "x",s False)
          , ("chr1",s $ accepts (symA 'x') "x",s True)
          , ("chr2",s $ accepts (symA 'x') "y",s False)
-         , ("cliq",s $ accepts cliq (take 100 (repeat ())), s False)
+         , ("cliq",s $ accepts cliq (replicate 100 ()), s False)
          , ("fork", s $ accepts r128 a127b, s False) 
          ]
      s x = show x -- cannot eta (MR?)

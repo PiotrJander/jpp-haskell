@@ -1,8 +1,6 @@
 module Auto (
     Auto
-    , testSymA
-
---     , accepts
+    , accepts
     , emptyA
     , epsA
     , symA
@@ -15,16 +13,6 @@ module Auto (
 
 import Data.List
 
-{-
-transition could be specified by a table Q x Sigma
-if char not in the transition row, then go to the dead state
-here we could adopt some sort of convention for the dead state
-
-we have non deterministic computation
-we reject the moment we are in no valid state
-we accept when the string was consumed and one of the states in valid
--}
-
 data Auto a q = A { states      :: [q]
                   , initStates  :: [q]
                   , isAccepting :: q -> Bool
@@ -36,12 +24,24 @@ instance (Show a, Enum a, Bounded a, Show q) => Show (Auto a q) where
 
 
 -- | accepts aut w mówi czy automat aut akceptuje słowo w
--- | Funkcja accepts powinna działać w czasie liniowym zwn. długość słowa.
--- accepts :: Eq q => Auto a q -> [a] -> Bool
--- -- accepts a0 "" = do
--- accepts a0 (x:xs) = do
---     q0 <- initStates a0
---
+-- Funkcja accepts powinna działać w czasie liniowym zwn. długość słowa.
+-- TODO how to filter duplicates with the list monad
+accepts :: Eq q => Auto a q -> [a] -> Bool
+accepts a0 xs = any (isAccepting a0) $ accepts' a0 (initStates a0) xs
+
+accepts' :: Eq q => Auto a q -> [q] -> [a] -> [q]
+accepts' _ qs [] = qs
+accepts' a0 qs (x:xs) =
+    let
+        qs' = nub $ qs >>= \q -> transition a0 q x
+    in
+        accepts' a0 qs' xs
+
+-- accepts' :: Eq q => Auto a q -> q -> [a] -> [q]
+-- accepts' a0 q [] = [ q ]
+-- accepts' a0 q (x:xs) = do
+--     q' <- transition a0 q x
+--     nub $ accepts' a0 q' xs
 
 
 -- | emptyA rozpoznaje język pusty
@@ -113,7 +113,7 @@ sumA a1 a2 = A {
 thenA :: Auto a q1 -> Auto a q2 -> Auto a (Either q1 q2)
 thenA a1 a2 = A {
     states = map Left (states a1) ++ map Right (states a2),
-    initStates = map Left (initStates a1),
+    initStates = map Left (initStates a1) ++ (if any (isAccepting a1) (initStates a1) then map Right (initStates a2) else []),
     isAccepting = \qq -> case qq of {
             Left q -> False;
             Right q -> isAccepting a2 q
@@ -125,6 +125,7 @@ thenA a1 a2 = A {
 }
 
 
+
 -- | fromLists tłumaczy pomiędzy reprezentacją funkcyjną a reprezentacją listową (stany,startowe,akceptujące,przejścia)
 fromLists :: (Eq q, Eq a) => [q] -> [q] -> [q] -> [(q,a,[q])] -> Auto a q
 fromLists states initStates finalStates transitions = A {
@@ -134,7 +135,7 @@ fromLists states initStates finalStates transitions = A {
     transition = \q a -> case fun q a of {Just (_, _, dest) -> dest; Nothing -> []}
 }
     where
-        fun q a = find (\t -> case t of {(q, a, _) -> True; _ -> False}) transitions
+        fun q a = find (\(q', a', _) -> q == q' && a == a') transitions
 
 
 -- | toLists tłumaczy pomiędzy reprezentacją funkcyjną a reprezentacją listową (stany,startowe,akceptujące,przejścia)
@@ -144,28 +145,27 @@ toLists a0 = (states a0, initStates a0, filter (isAccepting a0) (states a0), tra
         trans = [ (q, c, dest) | q <- states a0, c <- [minBound .. ], let dest = transition a0 q c, not $ null dest]
 
 
-{-
+-- tests
+--
+-- data AB = AA | BB deriving(Eq,Ord,Show,Bounded,Enum)
+--
+--
+--
+-- aut0 :: Auto AB Int
+-- aut0 = fromLists a b c d
+--     where
+--         (a, b, c, d) = ([0,1,2],[1],[2],[(0,AA,[2]),(0,BB,[1,2]),(1,AA,[]),(1,BB,[1]),(2,AA,[]),(2,BB,[1,2])])
 
-Wskazówka: przydatne mogą być funkcje
-
-either :: (a -> c) -> (b -> c) -> Either a b -> c
-any :: (a -> Bool) -> [a] -> Bool
--}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+--
+-- ttable = [(0,AA,[2]),(0,BB,[1,2]),(1,AA,[]),(1,BB,[1]),(2,AA,[]),(2,BB,[1,2])]
+--
+--
+-- fun ttable q a = find (\(q', a', _) -> q == q' && a == a') ttable
+--
+--
+--
+-- exper = case (0, AA, [2]) of {(1, AA, _) -> True; _ -> False}
+--
+--
 
 
