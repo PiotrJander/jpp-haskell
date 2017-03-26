@@ -23,6 +23,18 @@ instance (Show a, Enum a, Bounded a, Show q) => Show (Auto a q) where
     show = show . toLists
 
 
+-- newtype Alpha = Alpha Char deriving (Eq, Enum, Show)
+--
+-- instance Bounded Alpha where
+--     minBound = Alpha 'A'
+--     maxBound = Alpha 'Z'
+--
+-- -- instance Enum Alpha where
+-- --     show (Alpha c) = show c
+-- --
+-- -- instance Show Alpha where ...
+
+
 -- | accepts aut w mówi czy automat aut akceptuje słowo w
 -- Funkcja accepts powinna działać w czasie liniowym zwn. długość słowa.
 -- TODO how to filter duplicates with the list monad
