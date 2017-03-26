@@ -1,6 +1,8 @@
 module Auto (
     Auto
-    , accepts
+    , testSymA
+
+--     , accepts
     , emptyA
     , epsA
     , symA
@@ -29,6 +31,10 @@ data Auto a q = A { states      :: [q]
                   , transition  :: q -> a -> [q]
                   }
 
+instance (Show a, Enum a, Bounded a, Show q) => Show (Auto a q) where
+    show = show . toLists
+
+
 -- | accepts aut w mówi czy automat aut akceptuje słowo w
 -- | Funkcja accepts powinna działać w czasie liniowym zwn. długość słowa.
 -- accepts :: Eq q => Auto a q -> [a] -> Bool
@@ -36,7 +42,6 @@ data Auto a q = A { states      :: [q]
 -- accepts a0 (x:xs) = do
 --     q0 <- initStates a0
 --
-
 
 
 -- | emptyA rozpoznaje język pusty
@@ -68,7 +73,7 @@ symA c = A {
     transition = trans
 }
     where
-        trans False c = [True]
+        trans False ch = [True | ch == c]
         trans _ _ = []
 
 
@@ -87,6 +92,7 @@ leftA a0 = A {
     }
 }
 
+
 -- | język automatu sumA aut1 aut2 jest sumą języków dla aut1 i aut2
 sumA :: Auto a q1 -> Auto a q2 -> Auto a (Either q1 q2)
 sumA a1 a2 = A {
@@ -102,10 +108,6 @@ sumA a1 a2 = A {
     }
 }
 
-{-
-as for transition, we can transition from the final state of a1 to
-any of the initial states of a2; otherwise normal transitions
--}
 
 -- | język automatu thenA aut1 aut2 jest konkatenacją języków dla aut1 i aut2
 thenA :: Auto a q1 -> Auto a q2 -> Auto a (Either q1 q2)
@@ -125,20 +127,24 @@ thenA a1 a2 = A {
 
 -- | fromLists tłumaczy pomiędzy reprezentacją funkcyjną a reprezentacją listową (stany,startowe,akceptujące,przejścia)
 fromLists :: (Eq q, Eq a) => [q] -> [q] -> [q] -> [(q,a,[q])] -> Auto a q
-fromLists = undefined
+fromLists states initStates finalStates transitions = A {
+    states = states,
+    initStates = initStates,
+    isAccepting = (`elem` finalStates),
+    transition = \q a -> case fun q a of {Just (_, _, dest) -> dest; Nothing -> []}
+}
+    where
+        fun q a = find (\t -> case t of {(q, a, _) -> True; _ -> False}) transitions
 
 
 -- | toLists tłumaczy pomiędzy reprezentacją funkcyjną a reprezentacją listową (stany,startowe,akceptujące,przejścia)
-toLists :: (Enum a,Bounded a) => Auto a q -> ([q],[q],[q],[(q,a,[q])])
-toLists = undefined
+toLists :: (Enum a, Bounded a) => Auto a q -> ([q],[q],[q],[(q,a,[q])])
+toLists a0 = (states a0, initStates a0, filter (isAccepting a0) (states a0), trans)
+    where
+        trans = [ (q, c, dest) | q <- states a0, c <- [minBound .. ], let dest = transition a0 q c, not $ null dest]
 
 
--- instance (Show a, Enum a, Bounded a, Show q) => Show (Auto a q) where
 {-
-warto przy tym zadbać aby wypisywana reprezentacja była w miarę możności czytelna, np.
-
-*Auto> symA 'x'
-fromLists [False,True] [False] [True] [(False,'x',[True])]
 
 Wskazówka: przydatne mogą być funkcje
 
