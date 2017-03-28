@@ -45,7 +45,10 @@ accepts' :: Eq q => Auto a q -> [q] -> [a] -> [q]
 accepts' _ qs [] = qs
 accepts' a0 qs (x:xs) =
     let
-        qs' = nub $ qs >>= \q -> transition a0 q x
+--         qs' = nub $ qs >>= \q -> transition a0 q x
+        qs' = nub $ do
+            q <- qs
+            transition a0 q x
     in
         accepts' a0 qs' xs
 
@@ -53,6 +56,7 @@ accepts' a0 qs (x:xs) =
 -- accepts' a0 q [] = [ q ]
 -- accepts' a0 q (x:xs) = do
 --     q' <- transition a0 q x
+-- --     accepts' a0 q' xs
 --     nub $ accepts' a0 q' xs
 
 

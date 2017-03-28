@@ -1,0 +1,38 @@
+-- module MoreMonads where
+--
+-- class Monad_ m where
+--     return_ :: a -> m a
+--     (>>==) :: m a -> (a -> m b) -> m b
+--
+-- instance Monad_ Maybe where
+--     return_ = Just
+--
+--     Nothing >>== f = Nothing
+--     (Just x) >>== f = f x
+--
+-- -- law 1: return a >>== f ≡ f a
+-- -- law 2: m >>== return ≡ m
+-- -- law 3: (m >>== f) >>== g ≡ m >>== (\x -> f x >>== g)
+--
+-- instance Monad_ [] where
+--     return_ x = [x]
+--
+--     [] >>== f = []
+--     (x:xs) >>== f = f x ++ (xs >>== f)
+--
+--
+-- instance Monad_ ((->) r) where
+--     return_ x = \_ -> x
+--     h >>== f = \w -> f (h w) w
+--
+--
+-- newtype State_ s a = State_ { runState_ :: s -> (a,s) }
+--
+--
+-- instance Monad_ (State_ s) where
+--
+--     return_ x = State_ $ \s -> (x, s)
+--
+--     (State_ h) >>== f = State_ $ \s -> let  (a, newState) = h s
+--                                             (State_ g) = f a
+--                                         in g newState

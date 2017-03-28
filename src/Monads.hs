@@ -36,32 +36,32 @@ fromList = foldl fun Empty
             | x <= v = Node v (fun left x) right
             | otherwise = Node v left (fun right x)
 
--- start difference lists
-
-newtype DiffList a = DiffList { getDiffList :: [a] -> [a] }
-
-toDiffList :: [a] -> DiffList a
-toDiffList xs = DiffList (xs++)
-
-fromDiffList :: DiffList a -> [a]
-fromDiffList (DiffList f) = f []
-
-instance Monoid (DiffList a) where
-    mempty = DiffList (\xs -> [] ++ xs)
-    (DiffList f) `mappend` (DiffList g) = DiffList (f . g)
-
--- end difference lists
+-- -- start difference lists
+--
+-- newtype DiffList a = DiffList { getDiffList :: [a] -> [a] }
+--
+-- toDiffList :: [a] -> DiffList a
+-- toDiffList xs = DiffList (xs++)
+--
+-- fromDiffList :: DiffList a -> [a]
+-- fromDiffList (DiffList f) = f []
+--
+-- instance Monoid (DiffList a) where
+--     mempty = DiffList (\xs -> [] ++ xs)
+--     (DiffList f) `mappend` (DiffList g) = DiffList (f . g)
+--
+-- -- end difference lists
 
 toListNaive :: Tree a -> [a]
 toListNaive Empty = []
-toListNaive (Node x left right) = toList left ++ [x] ++ toList right
+toListNaive (Node x left right) = toListNaive left ++ [x] ++ toListNaive right
 
-toList :: Tree a -> [a]
-toList = fromDiffList . toList'
-
-toList' :: Tree a -> DiffList a
-toList' Empty = toDiffList []
-toList' (Node x left right) = toDiffList [x] `mappend` toList' left `mappend` toList' right
+-- toList :: Tree a -> [a]
+-- toList = fromDiffList . toList'
+--
+-- toList' :: Tree a -> DiffList a
+-- toList' Empty = toDiffList []
+-- toList' (Node x left right) = toDiffList [x] `mappend` toList' left `mappend` toList' right
 
 renumber_ :: Tree a -> Tree Int
 renumber_ Empty = Empty
@@ -99,6 +99,48 @@ evalExp' (EVar var) = \env -> let (Just value) = M.lookup var env in value
 evalExp' (ELet var e1 e2) = do
     value <- evalExp' e1
     evalExp' e2 . M.insert var value
+
+
+-- TODO write with reader monad
+
+{-
+-- | See examples in "Control.Monad.Reader".
+-- Note, the partially applied function type @(->) r@ is a simple reader monad.
+-- See the @instance@ declaration below.
+class Monad m => MonadReader r m | m -> r where
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
+    {-# MINIMAL (ask | reader), local #-}
+#endif
+    -- | Retrieves the monad environment.
+    ask   :: m r
+    ask = reader id
+
+    -- | Executes a computation in a modified environment.
+    local :: (r -> r) -- ^ The function to modify the environment.
+          -> m a      -- ^ @Reader@ to run in the modified environment.
+          -> m a
+
+    -- | Retrieves a function of the current environment.
+    reader :: (r -> a) -- ^ The selector function to apply to the environment.
+           -> m a
+    reader f = do
+      r <- ask
+      return (f r)
+
+-- | Retrieves a function of the current environment.
+asks :: MonadReader r m
+    => (r -> a) -- ^ The selector function to apply to the environment.
+    -> m a
+asks = reader
+
+-- ----------------------------------------------------------------------------
+-- The partially applied function type is a simple reader monad
+
+instance MonadReader r ((->) r) where
+    ask       = id
+    local f m = m . f
+    reader    = id
+-}
 
 
 --
