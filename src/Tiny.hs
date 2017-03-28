@@ -94,7 +94,7 @@ execStmtState (WhileDo cond stmt) = do
         execStmtState stmt
         execStmtState (WhileDo cond stmt)
 
--- | Depends on args "a" and "a" in the env
+-- | Depends on args "a" and "b" in the env
 gcd' :: Stmt
 gcd' = WhileDo (EVar "a" /=: EInt 0) (
     "c" := EVar "a" :/
