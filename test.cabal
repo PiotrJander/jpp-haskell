@@ -20,6 +20,7 @@ library
                         , RunAuto
                         , Monads
                         , Lab5
+                        , Tiny
 --                        , MoreMonads
   build-depends:       base >= 4.7 && < 5
                         , mtl
