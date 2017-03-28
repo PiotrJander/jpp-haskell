@@ -1,9 +1,11 @@
 module Main where
 
 import Monads
-import Auto
-import RunAuto
+-- import Auto
+-- import RunAuto
+import Lab5
 
 main :: IO ()
-main = readModel
+main = return ()
+
 

@@ -4,6 +4,7 @@ import qualified Data.Map.Strict as M
 import Control.Monad
 import Data.Maybe
 import Control.Monad.State
+import Control.Monad.Reader
 
 -- problem 1
 
@@ -27,6 +28,10 @@ allCombinations (xs:xss) = do
 -- problem 2
 
 data Tree a = Empty | Node a (Tree a) (Tree a) deriving (Eq, Ord, Show)
+
+-- instance Functor Tree where
+--     fmap _ Empty = Empty
+--     fmap f (Node x left right) = Node (f x) left right
 
 fromList :: (Ord a) => [a] -> Tree a
 fromList = foldl fun Empty
@@ -71,6 +76,45 @@ renumber_' :: Int -> Tree a -> Tree Int
 renumber_' _ Empty = Empty
 renumber_' i (Node _ t1 t2) = Node i (renumber_' (i+1) t1) (renumber_' (i+1) t2)
 
+
+
+{-
+the env is the level number
+
+reader monad is all about making a function composition tree
+where the tree depends on the env
+
+here we can bind to nonexistent (yet) computations
+-}
+
+
+renumber :: Tree a -> Tree Int
+renumber tree = renumber'' tree 0
+
+renumber' :: Tree a -> Reader Int (Tree Int)
+renumber' Empty = return Empty
+renumber' (Node x left right) = do
+    i <- ask  -- nice for binding; nice for composing functions; a bit like let
+--     a <- reader (+1)  -- like ask, but also applies a function
+--     a <- local (+5) $ do  -- example with nested reader
+--         a <- ask
+--         let b = a + 1
+--         return b
+    le <- local (+1) $ renumber' left
+    ri <- local (+1) $ renumber' right
+    return $ Node i le ri
+
+renumber'' :: Tree a -> Int -> Tree Int
+renumber'' Empty = return Empty
+renumber'' (Node x left right) = do
+    i <- ask
+    le <- local (+1) $ renumber'' left
+    ri <- local (+1) $ renumber'' right
+    return $ Node i le ri
+
+
+
+
 type Var = String
 type Env = M.Map Var Int
 
@@ -97,7 +141,7 @@ evalExp' (EOp OpMul e1 e2) = liftM2 (*) (evalExp' e1) (evalExp' e2)
 evalExp' (EOp OpSub e1 e2) = liftM2 (-) (evalExp' e1) (evalExp' e2)
 evalExp' (EVar var) = \env -> let (Just value) = M.lookup var env in value
 evalExp' (ELet var e1 e2) = do
-    value <- evalExp' e1
+    value <- evalExp' e1  -- a simple example of how function is a reader
     evalExp' e2 . M.insert var value
 
 
