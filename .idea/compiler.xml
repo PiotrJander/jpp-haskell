@@ -24,6 +24,7 @@
     <cabalPath>$USER_HOME$/Library/Haskell/bin/cabal</cabalPath>
     <useStack>true</useStack>
     <stackPath>/usr/local/bin/stack</stackPath>
+    <stackFlags>-fno-warn-warnings-deprecations</stackFlags>
     <stackFile>$PROJECT_DIR$/stack.yaml</stackFile>
   </component>
 </project>
